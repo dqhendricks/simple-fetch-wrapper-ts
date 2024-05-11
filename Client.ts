@@ -80,6 +80,7 @@ export function formDataToObject(formData: FormData) {
       key: allItems.length > 1 ? allItems : allItems[0],
     };
   }
+  // considering adding a generic type to this function to assert the output as
   return objectData;
 }
 
