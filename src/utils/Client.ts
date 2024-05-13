@@ -77,7 +77,7 @@ export function formDataToObject(formData: FormData) {
     // creates new object each iteration to avoid Typing errors
     objectData = {
       ...objectData,
-      key: allItems.length > 1 ? allItems : allItems[0],
+      [key]: allItems.length > 1 ? allItems : allItems[0],
     };
   }
   // considering adding a generic type to this function to assert the output as
