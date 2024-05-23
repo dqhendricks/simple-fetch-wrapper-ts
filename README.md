@@ -1,19 +1,20 @@
 # simple-fetch-wrapper-ts
 This TS utility module abstracts away some of the common additional fetch-related code.
 
-* Passes errors back as Promise rejections.
-* Seamlessly allows both Object or FormData request bodies.
-* Default headers.
-* Auto-selects GET or POST based on existence of `body`, if not already set in the `config` argument.
-* Simple login and logout functions.
-* Local storage and automatic use of API authentication tokens.
-* Auto logout on 401 error response.
+* Passes unexpected errors back as error Promise rejections.
+* Seamlessly allows both object or FormData request bodies.
+* Auto sets content-type header when body set to object.
+* Auto-selects GET or POST based on existence of body, if not already set in the config argument.
+* Set and automatically use bearer tokens (uses local storage, so must safeguard against XXS attacks).
+* Register universal status handlers to handle things like 401 (unauthorized request) responses.
+* Register response interceptors to universally handle certain data in responses.
 * Conversion utilities for FormData->Object and Object->FormData.
 
-**Usage example:**
+**Usage examples:**
 
 ```
-import * as client from "./Client.ts";
+// basic usage
+import * as client from "./client.ts";
 
 client.request('login', {body: {username, password}}).then(
     data => {
@@ -24,3 +25,12 @@ client.request('login', {body: {username, password}}).then(
     },
 );
 ```
+
+```
+// set status handlers and interceptors
+import * as client from "./client.ts";
+
+client.addStatusHandler(401, () => {
+  // unauthorized request
+  // do something like set isAuthenticated to false in global state here
+});
