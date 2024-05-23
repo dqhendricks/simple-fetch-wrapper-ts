@@ -8,7 +8,7 @@ This TS utility module abstracts away some of the common additional fetch-relate
 * Set and automatically use bearer tokens (uses local storage, so must safeguard against XXS attacks).
 * Register universal status handlers to handle things like 401 (unauthorized request) responses.
 * Register response interceptors to universally handle certain data in responses.
-* Conversion utilities for FormData->Object and Object->FormData.
+* Conversion utilities for FormData->object and object->FormData.
 
 **Usage examples:**
 
@@ -34,3 +34,9 @@ client.addStatusHandler(401, () => {
   // unauthorized request
   // do something like set isAuthenticated to false in global state here
 });
+
+client.addResponseInterceptor((data) => {
+  // check response data for all requests to handle certain data in responses
+  // code could easily be modified to run universal data conversions as well, but would then require you to return data from all interceptors
+}
+```
