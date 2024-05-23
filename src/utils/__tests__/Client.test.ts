@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from "vitest";
 
-import * as client from "../Client.ts";
+import * as client from "../client.ts";
 
 const defaultResponseObject = new Response();
 
