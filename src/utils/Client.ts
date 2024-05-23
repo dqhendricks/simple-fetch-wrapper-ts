@@ -1,7 +1,7 @@
 /*
     usage example:
 
-    import * as client from "./Client";
+    import * as client from "./client";
 
     client.request('login', {body: {username, password}}).then(
         data => {
@@ -13,27 +13,46 @@
     );
 */
 
-const API_BASE_URL = "https://dustinhendricks.com";
-const LOCAL_STORAGE_KEY = "__dustin_hendricks_token__"; // storage key for API authentication tokens
+const API_BASE_URL = "https://exampledomain.com";
+const LOCAL_STORAGE_KEY = "__your_site_token__"; // storage key for API authentication tokens
 
-export function request(
+interface StatusHandlers {
+  [key: string]: () => void;
+}
+
+type StatusCode = string | number;
+
+type ResponseInterceptor = (data: Record<string, unknown>) => void;
+
+type FormDataAsObject = Record<string, string | Blob | Array<string | Blob>>;
+
+type ObjectToFormData = Record<
+  string,
+  string | Blob | number | Array<string | Blob | number>
+>;
+
+const statusHandlers: StatusHandlers = {};
+const responseInterceptors: Array<ResponseInterceptor> = [];
+
+export function fetch(
   endpoint: string,
-  { body, ...customConfig }: RequestInit = {},
+  { body, ...customConfig }: RequestInit = {}
 ) {
+  // add bearer token if exists
   const token = localStorage.getItem(LOCAL_STORAGE_KEY);
   const headers: HeadersInit = {};
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
   const config: RequestInit = {
-    method: body ? "POST" : "GET",
+    method: body ? "POST" : "GET", // auto set method if not set in config
     ...customConfig,
     headers: {
       ...headers,
       ...customConfig.headers,
     },
   };
-  // allow both FormData or {} fetch requests
+  // allow both FormData or object fetch requests
   if (body) {
     if (body instanceof FormData !== true) {
       body = JSON.stringify(body);
@@ -42,53 +61,81 @@ export function request(
     config.body = body;
   }
 
-  return fetch(`${API_BASE_URL}/${endpoint}`, config).then(async (response) => {
-    if (response.status === 401) {
-      logout();
-      window.location.assign(window.location.href);
-      return;
-    }
-    if (response.ok) {
-      return await response.json();
-    } else {
-      const errorMessage = await response.text();
-      return Promise.reject(new Error(errorMessage));
-    }
-  });
+  return window
+    .fetch(`${API_BASE_URL}/${endpoint}`, config)
+    .then(async (response) => {
+      // execute any set status handlers for expected errors
+      if (response.status.toString() in statusHandlers) {
+        statusHandlers[response.status.toString()]();
+        return await response.json();
+      }
+      if (response.ok) {
+        // success
+        const data = await response.json();
+        // execute any set response interceptors
+        responseInterceptors.forEach((interceptor) => interceptor(data));
+        return data;
+      } else {
+        // unexpected error
+        const errorMessage = await response.text();
+        return Promise.reject(new Error(errorMessage));
+      }
+    });
 }
 
-export function login(token: string) {
+export function setAuthToken(token: string) {
   localStorage.setItem(LOCAL_STORAGE_KEY, token);
 }
 
-export function logout() {
-  localStorage.removeItem(LOCAL_STORAGE_KEY);
-}
-
-export function formDataToObject(formData: FormData) {
+export function formDataToObject(formData: FormData): FormDataAsObject {
   // does not support multi-dimensional arrays
-  let objectData = {};
+  const objectData: FormDataAsObject = {};
   for (const key of formData.keys()) {
     const allItems = formData.getAll(key);
-    // creates new object each iteration to avoid Typing errors
-    objectData = {
-      ...objectData,
-      [key]: allItems.length > 1 ? allItems : allItems[0],
-    };
+    objectData[key] = allItems.length > 1 ? allItems : allItems[0];
   }
-  // considering adding a generic type to this function to assert the output as
   return objectData;
 }
 
-export function objectToFormData(objectData: object) {
+export function objectToFormData(objectData: ObjectToFormData): FormData {
   // does not support multi-dimensional arrays
   const formData = new FormData();
   Object.entries(objectData).forEach(([key, value]) => {
     if (Array.isArray(value)) {
-      value.forEach((subValue) => formData.append(key, subValue));
+      value.forEach((subValue) =>
+        formData.append(
+          key,
+          typeof subValue !== "number" ? subValue : subValue.toString()
+        )
+      );
     } else {
-      formData.append(key, value);
+      formData.append(
+        key,
+        typeof value !== "number" ? value : value.toString()
+      );
     }
   });
   return formData;
+}
+
+// set status handlers to universally handle things like 401 unauthorized request responses
+export function addStatusHandler(
+  statusCode: StatusCode,
+  handler: StatusHandlers[string]
+) {
+  statusHandlers[statusCode.toString()] = handler;
+}
+
+export function removeStatusHandler(statusCode: StatusCode) {
+  delete statusHandlers[statusCode.toString()];
+}
+
+// add response interceptors to universally handle certain data in responses
+export function addResponseInterceptor(interceptor: ResponseInterceptor) {
+  responseInterceptors.push(interceptor);
+}
+
+export function removeResponseInterceptor(interceptor: ResponseInterceptor) {
+  const index = responseInterceptors.indexOf(interceptor);
+  if (index !== -1) responseInterceptors.splice(index, 1);
 }
