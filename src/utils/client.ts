@@ -67,7 +67,6 @@ export function fetch(
       // execute any set status handlers for expected errors
       if (response.status.toString() in statusHandlers) {
         statusHandlers[response.status.toString()]();
-        return await response.json();
       }
       if (response.ok) {
         // success
