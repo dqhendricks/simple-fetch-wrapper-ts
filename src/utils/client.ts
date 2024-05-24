@@ -24,9 +24,7 @@ type StatusCode = string | number;
 
 type ResponseInterceptor = <T>(data: T) => T;
 
-type FormDataAsObject = Record<string, string | Blob | Array<string | Blob>>;
-
-type ObjectToFormData = Record<
+type FormDataAsObject = Record<
   string,
   string | Blob | number | Array<string | Blob | number>
 >;
@@ -98,7 +96,7 @@ export function formDataToObject(formData: FormData): FormDataAsObject {
   return objectData;
 }
 
-export function objectToFormData(objectData: ObjectToFormData): FormData {
+export function objectToFormData(objectData: FormDataAsObject): FormData {
   // does not support multi-dimensional arrays
   const formData = new FormData();
   Object.entries(objectData).forEach(([key, value]) => {
