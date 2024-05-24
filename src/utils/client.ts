@@ -22,7 +22,7 @@ interface StatusHandlers {
 
 type StatusCode = string | number;
 
-type ResponseInterceptor = (data: Record<string, unknown>) => void;
+type ResponseInterceptor = <T>(data: T) => T;
 
 type FormDataAsObject = Record<string, string | Blob | Array<string | Blob>>;
 
@@ -34,7 +34,7 @@ type ObjectToFormData = Record<
 const statusHandlers: StatusHandlers = {};
 const responseInterceptors: Array<ResponseInterceptor> = [];
 
-export function fetch(
+export function fetch<T>(
   endpoint: string,
   { body, ...customConfig }: RequestInit = {}
 ) {
@@ -70,9 +70,11 @@ export function fetch(
       }
       if (response.ok) {
         // success
-        const data = await response.json();
+        let data: T = await response.json();
         // execute any set response interceptors
-        responseInterceptors.forEach((interceptor) => interceptor(data));
+        responseInterceptors.forEach((interceptor) => {
+          data = interceptor(data);
+        });
         return data;
       } else {
         // unexpected error
