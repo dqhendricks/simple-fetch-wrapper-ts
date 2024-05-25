@@ -37,7 +37,7 @@ export function fetch<T>(
   { body, ...customConfig }: RequestInit = {}
 ) {
   // add bearer token if exists
-  const token = localStorage.getItem(LOCAL_STORAGE_KEY);
+  const token = sessionStorage.getItem(LOCAL_STORAGE_KEY);
   const headers: HeadersInit = {};
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -83,7 +83,11 @@ export function fetch<T>(
 }
 
 export function setAuthToken(token: string) {
-  localStorage.setItem(LOCAL_STORAGE_KEY, token);
+  sessionStorage.setItem(LOCAL_STORAGE_KEY, token);
+}
+
+export function removeAuthToken() {
+  sessionStorage.removeItem(LOCAL_STORAGE_KEY);
 }
 
 export function formDataToObject(formData: FormData): FormDataAsObject {
