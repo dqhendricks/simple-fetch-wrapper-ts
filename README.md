@@ -1,5 +1,5 @@
 # simple-fetch-wrapper-ts
-This TS utility module abstracts away some of the common additional fetch-related code.
+This utility module abstracts away some of the common additional fetch-related code.
 
 * Passes unexpected errors back as error Promise rejections.
 * Seamlessly allows both object or FormData request bodies.
