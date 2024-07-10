@@ -16,7 +16,7 @@ This utility module abstracts away some of the common additional fetch-related c
 // basic usage
 import * as client from "./client.ts";
 
-client.request('login', {body: {username, password}}).then(
+client.fetch('login', {body: {username, password}}).then(
     data => {
         console.log('here the logged in user data', data);
     },
