@@ -1,7 +1,9 @@
-type ResponseInterceptor = (data: any, endpoint: string) => any;
+type FormDataValue = Record<string, string | Blob | (string | Blob)[]>;
+type ResponseInterceptor<T = unknown> = (data: T, endpoint: string) => T;
 type StatusCode = number | string;
 
-const API_BASE_URL = process.env.API_BASE_URL || "https://exampledomain.com/api";
+const API_BASE_URL =
+  process.env.API_BASE_URL || "https://exampledomain.com/api";
 const LOCAL_STORAGE_KEY = "__exampledomain_auth_token__"; // storage key for API token
 
 let lastResponse: Response | null = null;
@@ -15,9 +17,11 @@ const responseInterceptors: ResponseInterceptor[] = [];
  * @param customConfig - Custom configuration for the fetch request.
  * @returns A promise resolving to the response data.
  */
-export async function fetch<T = any>(endpoint: string, customConfig: RequestInit = {}): Promise<T> {
+export async function fetch(endpoint: string, customConfig: RequestInit = {}) {
   const token = sessionStorage.getItem(LOCAL_STORAGE_KEY);
-  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+  const headers: Record<string, string> = token
+    ? { Authorization: `Bearer ${token}` }
+    : {};
 
   let body = customConfig.body;
   if (body && !(body instanceof FormData)) {
@@ -51,10 +55,16 @@ export async function fetch<T = any>(endpoint: string, customConfig: RequestInit
       return data;
     } else {
       const errorText = await response.text();
-      return Promise.reject(new Error(`Error ${response.status}: ${errorText}`));
+      return Promise.reject(
+        new Error(`Error ${response.status}: ${errorText}`)
+      );
     }
   } catch (error) {
-    return Promise.reject(new Error(`Fetch to ${endpoint} failed: ${error.message}`));
+    if (error instanceof Error) {
+      return Promise.reject(
+        new Error(`Fetch to ${endpoint} failed: ${error.message}`)
+      );
+    }
   }
 }
 
@@ -64,10 +74,14 @@ export async function fetch<T = any>(endpoint: string, customConfig: RequestInit
  * @param response - The fetch response object.
  * @returns A promise resolving to the processed response data.
  */
-async function processResponseData(response: Response): Promise<any> {
+async function processResponseData(response: Response) {
   const contentType = response.headers.get("Content-Type") || "";
   if (contentType.includes("application/json")) return response.json();
-  if (contentType.includes("image/") || contentType.includes("video/") || contentType.includes("application/")) {
+  if (
+    contentType.includes("image/") ||
+    contentType.includes("video/") ||
+    contentType.includes("application/")
+  ) {
     return response.blob();
   }
   return response.text();
@@ -81,7 +95,7 @@ async function processResponseData(response: Response): Promise<any> {
 export function getFilenameFromLastResponse(): string | undefined {
   const contentDisposition = lastResponse?.headers.get("Content-Disposition");
   const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-  const matches = filenameRegex.exec(contentDisposition || '');
+  const matches = filenameRegex.exec(contentDisposition || "");
   return matches ? matches[1].replace(/['"]/g, "") : undefined;
 }
 
@@ -116,7 +130,10 @@ export function isAuthTokenSet(): boolean {
  * @param statusCode - The HTTP status code.
  * @param handler - The handler function to execute for the status code.
  */
-export function addStatusHandler(statusCode: StatusCode, handler: () => void): void {
+export function addStatusHandler(
+  statusCode: StatusCode,
+  handler: () => void
+): void {
   statusHandlers[statusCode.toString()] = handler;
 }
 
@@ -143,7 +160,9 @@ export function addResponseInterceptor(interceptor: ResponseInterceptor): void {
  *
  * @param interceptor - The interceptor function to remove.
  */
-export function removeResponseInterceptor(interceptor: ResponseInterceptor): void {
+export function removeResponseInterceptor(
+  interceptor: ResponseInterceptor
+): void {
   const index = responseInterceptors.indexOf(interceptor);
   if (index !== -1) responseInterceptors.splice(index, 1);
 }
@@ -154,8 +173,8 @@ export function removeResponseInterceptor(interceptor: ResponseInterceptor): voi
  * @param formData - The FormData object to convert.
  * @returns The resulting plain object.
  */
-export function formDataToObject(formData: FormData): Record<string, any> {
-  const objectData: Record<string, any> = {};
+export function formDataToObject(formData: FormData) {
+  const objectData: FormDataValue = {};
   formData.forEach((value, key) => {
     if (!objectData[key]) {
       objectData[key] = value;
@@ -175,7 +194,7 @@ export function formDataToObject(formData: FormData): Record<string, any> {
  * @param objectData - The object to convert to FormData.
  * @returns The resulting FormData object.
  */
-export function objectToFormData(objectData: Record<string, any>): FormData {
+export function objectToFormData(objectData: FormDataValue): FormData {
   const formData = new FormData();
   Object.entries(objectData).forEach(([key, value]) => {
     if (Array.isArray(value)) {
