@@ -1,6 +1,9 @@
 type FormDataValue = Record<string, string | Blob | (string | Blob)[]>;
 type ResponseInterceptor<T = unknown> = (data: T, endpoint: string) => T;
 type StatusCode = number | string;
+type FetchOptions<T> = Omit<RequestInit, "body"> & {
+  body?: T;
+};
 
 const API_BASE_URL =
   process.env.API_BASE_URL || "https://exampledomain.com/api";
@@ -17,16 +20,20 @@ const responseInterceptors: ResponseInterceptor[] = [];
  * @param customConfig - Custom configuration for the fetch request.
  * @returns A promise resolving to the response data.
  */
-export async function fetch(endpoint: string, customConfig: RequestInit = {}) {
+export async function fetch(endpoint: string, customConfig: FetchOptions<T> = {}) {
   const token = sessionStorage.getItem(LOCAL_STORAGE_KEY);
   const headers: Record<string, string> = token
     ? { Authorization: `Bearer ${token}` }
     : {};
 
-  let body = customConfig.body;
-  if (body && !(body instanceof FormData)) {
-    body = JSON.stringify(body);
-    headers["Content-Type"] = "application/json";
+  let body: BodyInit | null | undefined;
+  if (customConfig.body) {
+    if (customConfig.body instanceof FormData) {
+      body = customConfig.body;
+    } else {
+      body = JSON.stringify(customConfig.body);
+      headers["Content-Type"] = "application/json";
+    }
   }
 
   const config: RequestInit = {
